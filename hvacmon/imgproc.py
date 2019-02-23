@@ -23,6 +23,84 @@ def find_leds(im):
     np.sort(pts, axis=0)
     return pts
 
+def parse_image_hardcoded_positions(im):
+    """
+    Parses image based on hardcoded position information.
+
+    Temporary workaround so I can still collect data until I sort out
+    exposure/whitebalance issues on the raspicam.
+
+    Do not change any offsets/sizes unless the camera moves!
+    """
+
+    #
+    # Crop a fixed ROI and convert to grayscale
+    #
+    im_roi = im[230:280,670:700]
+    im_roi_gray = cv2.cvtColor(im_roi, cv2.COLOR_BGR2GRAY)
+
+    #
+    # Fixed centroid/offsets for each LED.
+    # row 0: green/power
+    # row 1: zone 1 call
+    # row 2: zone 1 valve
+    # row 3: zone 2 call
+    # etc
+    #
+    led_centroids = \
+        np.array(
+            [[7,12],
+             [13,12],
+             [13,19],
+             [20,12],
+             [20,19],
+             [26,12],
+             [26,19],
+             [33,12],
+             [33,19]])
+
+    status = np.zeros((4,2))
+    t = 10
+    w = 1
+
+    c = led_centroids[0]
+    if (np.mean(im_roi_gray[c[0]-w:c[0]+w+1,c[1]-w:c[1]+w+1]) > t):
+        c = led_centroids[1]
+        if (np.mean(im_roi_gray[c[0]-w:c[0]+w+1,c[1]-w:c[1]+w+1]) > t):
+            status[0,0] = 1
+
+        c = led_centroids[2]
+        if (np.mean(im_roi_gray[c[0]-w:c[0]+w+1,c[1]-w:c[1]+w+1]) > t):
+            status[0,1] = 1
+
+        c = led_centroids[3]
+        if (np.mean(im_roi_gray[c[0]-w:c[0]+w+1,c[1]-w:c[1]+w+1]) > t):
+            status[1,0] = 1
+
+        c = led_centroids[4]
+        if (np.mean(im_roi_gray[c[0]-w:c[0]+w+1,c[1]-w:c[1]+w+1]) > t):
+            status[1,1] = 1
+
+        c = led_centroids[5]
+        if (np.mean(im_roi_gray[c[0]-w:c[0]+w+1,c[1]-w:c[1]+w+1]) > t):
+            status[2,0] = 1
+
+        c = led_centroids[6]
+        if (np.mean(im_roi_gray[c[0]-w:c[0]+w+1,c[1]-w:c[1]+w+1]) > t):
+            status[2,1] = 1
+
+        c = led_centroids[7]
+        if (np.mean(im_roi_gray[c[0]-w:c[0]+w+1,c[1]-w:c[1]+w+1]) > t):
+            status[3,0] = 1
+
+        c = led_centroids[8]
+        if (np.mean(im_roi_gray[c[0]-w:c[0]+w+1,c[1]-w:c[1]+w+1]) > t):
+            status[3,1] = 1
+    else:
+        raise RuntimeError('Unable to parse power/status LED!')
+
+    return status
+
 def parse_image(im):
     """
     Parses an input image for LEDs
@@ -90,3 +168,4 @@ def parse_image(im):
             status[3,1] = 1
 
     return status
+
