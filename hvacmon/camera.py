@@ -5,9 +5,10 @@ import io
 import picamera
 import picamera.array
 import time
+import numpy as np
 
 class Camera:
-    def __init__(self, resolution=(640, 480), rotation=0, framerate=24,
+    def __init__(self, resolution=(640, 480), rotation=0, framerate=30,
                  exposure_mode='sports'):
         self._resolution = resolution
         self._rotation = rotation
@@ -16,12 +17,14 @@ class Camera:
 
     def __enter__(self):
         self._camera = picamera.PiCamera()
-        self._camera.resolution = self._resolution
         self._camera.rotation = self._rotation
-        self._camera.framerate = self._framerate
-        self._camera.exposure_mode = self._exposure_mode
-        # Camera warmup time
+        #self._camera.framerate = self._framerate
+        #self._camera.exposure_mode = self._exposure_mode
+        self._camera.exposure_mode = 'off'
+        self._camera.shutter_speed = 16000
+        # Let automatic controls settle
         time.sleep(2)
+        return self
 
     def __exit__(self, type, value, traceback):
         self._camera.close()
@@ -30,7 +33,6 @@ class Camera:
         """
         Returns an OpenCV image captured from the camera
         """
-
         #
         # Generate local ISO 8601 timestamp with timezone info
         # Courtesy of https://stackoverflow.com/questions/2150739/iso-time-iso-8601-in-python
@@ -47,3 +49,4 @@ class Camera:
             image = stream.array
 
         return image, timestamp
+
