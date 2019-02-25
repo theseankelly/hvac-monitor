@@ -36,7 +36,7 @@ def parse_image_hardcoded_positions(im):
     #
     # Crop a fixed ROI and convert to grayscale
     #
-    im_roi = im[230:280,670:700]
+    im_roi = im[238:288,675:705]
     im_roi_gray = cv2.cvtColor(im_roi, cv2.COLOR_BGR2GRAY)
 
     #
@@ -50,14 +50,14 @@ def parse_image_hardcoded_positions(im):
     led_centroids = \
         np.array(
             [[7,12],
-             [13,12],
-             [13,19],
+             [14,12],
+             [14,19],
              [20,12],
              [20,19],
-             [26,12],
-             [26,19],
-             [33,12],
-             [33,19]])
+             [28,12],
+             [28,19],
+             [35,12],
+             [35,19]])
 
     status = np.zeros((4,2))
     t = 10

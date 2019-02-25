@@ -4,6 +4,7 @@ import cv2
 import datetime
 import time
 import dateutil.parser
+import numpy as np
 
 import hvacmon.camera
 import hvacmon.imgproc
@@ -15,7 +16,12 @@ def main():
 
         # Get the original snapshot of the system
         im, prev_timestamp = cam.get_frame()
-        prev_status = hvacmon.imgproc.parse_image_hardcoded_positions(im)
+
+        try:
+            prev_status = hvacmon.imgproc.parse_image_hardcoded_positions(im)
+        except:
+            prev_status = np.zeros((4,2))
+            pass
 
         print("(%s) Initial system state:" % prev_timestamp)
         print(prev_status)
@@ -24,18 +30,24 @@ def main():
             time.sleep(5)
             im, timestamp = cam.get_frame()
 
+            t1_str = dateutil.parser.parse(prev_timestamp).strftime(
+                "%Y-%m-%dT%H-%M-%S")
+            t2_str = dateutil.parser.parse(timestamp).strftime(
+                "%Y-%m-%dT%H-%M-%S")
+
+            filename = t1_str + "_" + t2_str
+
+            dt = (dateutil.parser.parse(timestamp) -
+                  dateutil.parser.parse(prev_timestamp)).total_seconds()
+
             try:
                 status = hvacmon.imgproc.parse_image_hardcoded_positions(im)
             except:
                 print("(%s) Error processing image!" % timestamp)
                 cv2.imwrite('/home/pi/data/hvac/failures/%s.jpg' % filename, im)
+                prev_status = np.zeros((4,2))
+                prev_timestamp = timestamp
                 continue
-
-            dt = (dateutil.parser.parse(timestamp) -
-                  dateutil.parser.parse(prev_timestamp)).total_seconds()
-
-            filename  = dateutil.parser.parse(timestamp).strftime(
-                "%Y-%m-%d_%H-%M-%S")
 
             if (~(status == prev_status).all()):
                 print("(%s) Status change detected!" % timestamp)
