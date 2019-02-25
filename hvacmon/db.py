@@ -15,3 +15,13 @@ def append_zone_data(starttime, endtime, zoneinfo):
                                              zoneinfo[2,0], zoneinfo[2,1],
                                              zoneinfo[3,0], zoneinfo[3,1]))
         db.commit()
+
+def append_temperature_data(timestamp, temperature):
+
+    with sqlite3.connect('/home/pi/databases/hvacmon.db') as db:
+        cursor = db.cursor()
+        cursor.execute('''
+            INSERT INTO temperature_readings(timestamp, temperature)
+            VALUES(?,?)''', (timestamp, temperature))
+        db.commit()
+
