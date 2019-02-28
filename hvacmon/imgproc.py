@@ -20,7 +20,6 @@ def find_leds(im):
     keypoints = detector.detect((im.astype(np.uint8)))
 
     pts = np.asarray([[p.pt[1], p.pt[0]] for p in keypoints])
-    np.sort(pts, axis=0)
     return pts
 
 def parse_image_hardcoded_positions(im):
@@ -60,7 +59,7 @@ def parse_image_hardcoded_positions(im):
              [35,19]])
 
     status = np.zeros((4,2))
-    t = 10
+    t = 20
     w = 1
 
     c = led_centroids[0]
@@ -106,66 +105,86 @@ def parse_image(im):
     Parses an input image for LEDs
     """
 
-    # TODO - potentially need to crop an ROI
-    im = im[60:130,310:340]
+    # Crop a fairly liberal ROI
+    im = im[170:330,630:755]
 
     #
-    # Convert to HSV space for filtering -- the input image
-    # should be a standard OpenCV 'BGR' image. Intentionally
-    # converting using 'RGB2HSV' as a 'trick' to make the filtering
-    # code a little easier to read.
+    # Convert to HSV space for filtering
     #
-    # (The colors of interest become green, cyan, and purple
-    # instead of green, red and yellow. This way, we don't need to
-    # handle red wrapping around from 0 to 255.)
-    #
-    im_hsv = cv2.cvtColor(im, cv2.COLOR_RGB2HSV)
+    im_hsv = cv2.cvtColor(im, cv2.COLOR_BGR2HSV)
 
     #
-    # Create color masks
+    # Threshold on the 'value' channel of HSV because it seems to give a more
+    # even response
+    # TODO: This should probably be a grayscale image. Need to learn about
+    # gamma and adjusting for intensities.
     #
-    lower_green = np.array([30,15,150])
-    upper_green = np.array([80,255,255])
+    mask = (im_hsv[:,:,2] > 75).astype(np.uint8)*255
+    leds = find_leds(mask)
+
+    if (len(leds) < 1):
+        raise RuntimeError('No LEDs segmented')
+
+    #
+    # Find and strip out the green power LED (assume it's the lowest row count)
+    #
+    power_led_idx = np.argmin(leds[:,0])
+    power_led = leds[power_led_idx, :]
+    leds = np.delete(leds, power_led_idx, axis=0)
+
+    #
+    # Sanity test - see if a 3x3 patch of pixels around the 'power led'
+    # does in fact fall within the green color space.
+    #
+    lower_green = np.array([20,0,10])
+    upper_green = np.array([110,255,255])
     mask_green = cv2.inRange(im_hsv, lower_green, upper_green)
-    green_leds = find_leds(mask_green)
+    patch = mask_green[
+        int(power_led[0])-2:int(power_led[0])+3,
+        int(power_led[1])-2:int(power_led[1])+3]
+    if (len(patch[patch > 0].flatten()) < 1):
+        raise RuntimeError('Power LED failed color check.')
 
-    lower_cyan = np.array([85,20,150])
-    upper_cyan = np.array([120,255,255])
-    mask_cyan = cv2.inRange(im_hsv, lower_cyan, upper_cyan)
-    cyan_leds = find_leds(mask_cyan)
+    #
+    # Synthesize the ideal LED offsets from the power LED
+    # Spacing is hardcoded and depends on resolution and distance.
+    #
+    led_spacing = (7,7)
+    zone_rows_approx = np.linspace(
+        power_led[0] + led_spacing[0],
+        power_led[0] + led_spacing[0]*4,
+        4)
 
-    lower_purple = np.array([120,100,150])
-    upper_purple = np.array([160,255,255])
-    mask_purple = cv2.inRange(im_hsv, lower_purple, upper_purple)
-    purple_leds = find_leds(mask_purple)
+    zone_cols_approx = np.linspace(
+        power_led[1],
+        power_led[1] + led_spacing[1],
+        2)
 
-    status = np.zeros((4,2))
+    #
+    # Validate that the original ROI is big enough
+    # and that we're not potentially dropping LEDs
+    #
+    if ((zone_rows_approx > im.shape[0]).any() or
+        (zone_cols_approx > im.shape[1]).any()):
+        raise RuntimeError('Expected LED offsets exceed image limits.')
 
-    # Total hack
-    zone1 = green_leds[0,0] + 5.5
-    zone2 = green_leds[0,0] + 11
-    zone3 = green_leds[0,0] + 16.5
-    zone4 = green_leds[0,0] + 22
+    status = np.zeros((4,2), dtype=np.uint8)
 
-    for row in cyan_leds:
-        if np.abs(row[0] - zone1) <= 2:
-            status[0,0] = 1
-        elif np.abs(row[0] - zone2) <= 2:
-            status[1,0] = 1
-        elif np.abs(row[0] - zone3) <= 2:
-            status[2,0] = 1
-        elif np.abs(row[0] - zone4) <= 2:
-            status[3,0] = 1
+    #
+    # For each 'found' LED figure out which approximated LED it's
+    # 'closest' to and mark the value in the status array
+    #
+    for led in leds:
+        row = (np.abs(led[0] - zone_rows_approx)).argmin()
+        col = (np.abs(led[1] - zone_cols_approx)).argmin()
 
-    for row in purple_leds:
-        if np.abs(row[0] - zone1) <= 2:
-            status[0,1] = 1
-        elif np.abs(row[0] - zone2) <= 2:
-            status[1,1] = 1
-        elif np.abs(row[0] - zone3) <= 2:
-            status[2,1] = 1
-        elif np.abs(row[0] - zone4) <= 2:
-            status[3,1] = 1
+        #
+        # Ensure the closest match we found is within half of the expected
+        # LED spacing. If not, we can't really guarantee the match is valid.
+        #
+        if ((np.abs(led[0] - zone_rows_approx[row]) > (led_spacing[0]/2)) or
+            (np.abs(led[1] - zone_cols_approx[col]) > (led_spacing[1]/2))):
+            raise RuntimeError('Closest match for LED exceeds tolerance.')
+        status[row, col] = 1
 
     return status
-
