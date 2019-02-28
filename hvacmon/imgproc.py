@@ -36,7 +36,7 @@ def parse_image_hardcoded_positions(im):
     #
     # Crop a fixed ROI and convert to grayscale
     #
-    im_roi = im[238:288,675:705]
+    im_roi = im[246:296,675:705]
     im_roi_gray = cv2.cvtColor(im_roi, cv2.COLOR_BGR2GRAY)
 
     #
