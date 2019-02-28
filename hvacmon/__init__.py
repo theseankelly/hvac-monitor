@@ -44,7 +44,7 @@ def main():
                 status = hvacmon.imgproc.parse_image_hardcoded_positions(im)
             except:
                 print("(%s) Error processing image!" % timestamp)
-                cv2.imwrite('/home/pi/data/hvac/failures/%s.jpg' % filename, im)
+                cv2.imwrite('/home/pi/data/hvac/failures/%s.png' % filename, im)
                 prev_status = np.zeros((4,2))
                 prev_timestamp = timestamp
                 continue
@@ -52,7 +52,7 @@ def main():
             if (~(status == prev_status).all()):
                 print("(%s) Status change detected!" % timestamp)
                 print(status)
-                cv2.imwrite('/home/pi/data/hvac/statechange/%s.jpg' % filename, im)
+                cv2.imwrite('/home/pi/data/hvac/statechange/%s.png' % filename, im)
 
                 hvacmon.db.append_zone_data(prev_timestamp, timestamp, prev_status)
                 prev_status = status
@@ -62,7 +62,7 @@ def main():
                 print("(%s) No status change after 1 min, logging..." % timestamp)
                 ts = dateutil.parser.parse(timestamp).strftime(
                     "%Y-%m-%d_%H-%M-%S.jpg")
-                cv2.imwrite('/home/pi/data/hvac/timeouts/%s.jpg' % filename, im)
+                cv2.imwrite('/home/pi/data/hvac/timeouts/%s.png' % filename, im)
 
                 hvacmon.db.append_zone_data(
                     prev_timestamp, timestamp, prev_status)
