@@ -1,0 +1,74 @@
+#!/usr/bin/env python
+
+import argparse
+import cv2
+import h5py
+from hvacmon import imgproc
+from glob import glob
+import os
+import sys
+import numpy as np
+
+ANNOTATED_ROOT_GROUP = '/annotated'
+ERROR_ROOT_GROUP = '/errors'
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--input", type=str, nargs='+',
+        help="Input image(s) to process", required=True)
+    parser.add_argument("-o", "--output", type=str,
+        help="Name of output (HDF5) to write", required=True)
+    parser.add_argument("-d", "--delete", action="store_true",
+        help="If specified, source data files are deleted after written to H5")
+    args = parser.parse_args()
+    return args
+
+def save_data(h5_file, im_filename, group, im, status):
+    with h5py.File(h5_file, 'a') as f:
+        g = f.require_group(group)
+        dset = g.create_dataset(
+            os.path.splitext(os.path.basename(im_filename))[0], data=im)
+        dset.attrs.create('status', status, dtype=np.uint8)
+
+def main():
+    args = parse_args()
+
+    # Workaround file globbing on Windows
+    all_files = [f for files in args.input for f in glob(files)]
+
+    for f in all_files:
+        im = cv2.imread(f)
+
+        status = imgproc.parse_image2(im)
+
+        # Create an overaly for visualization
+        textLocation = (600, 250)
+        offset = 0
+        dy = 20
+        fontScale = 0.5
+        fontColor = (255,255,255)
+        im_overlay = im.copy()
+        for row in status:
+            cv2.putText(im_overlay, str(row),
+                (textLocation[0], textLocation[1] + offset),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                fontScale,
+                fontColor)
+            offset += dy
+
+        cv2.imshow("window", im_overlay)
+        k = cv2.waitKey(0)
+        if k == ord('q'):
+            cv2.destroyAllWindows()
+            break
+        elif k == ord('e'):
+            save_data(args.output, f, ERROR_ROOT_GROUP, im, status)
+        else:
+            save_data(args.output, f, ANNOTATED_ROOT_GROUP, im, status)
+            # TODO - save the data/annotations to H5
+
+        if (args.delete):
+            os.remove(f)
+
+if __name__ == '__main__':
+    sys.exit(main())
