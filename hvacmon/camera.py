@@ -6,23 +6,18 @@ import picamera
 import picamera.array
 import time
 import numpy as np
+import hvacmon.util
 
 class Camera:
-    def __init__(self, resolution=(640, 480), rotation=0, framerate=30,
-                 exposure_mode='sports'):
+    def __init__(self, resolution=(640, 480), rotation=0):
         self._resolution = resolution
         self._rotation = rotation
-        self._framerate = framerate
-        self._exposure_mode = exposure_mode
 
     def __enter__(self):
         self._camera = picamera.PiCamera()
         self._camera.rotation = self._rotation
-        #self._camera.framerate = self._framerate
-        #self._camera.exposure_mode = self._exposure_mode
         self._camera.exposure_mode = 'off'
         self._camera.shutter_speed = 16000
-        # Let automatic controls settle
         time.sleep(2)
         return self
 
@@ -33,16 +28,7 @@ class Camera:
         """
         Returns an OpenCV image captured from the camera
         """
-        #
-        # Generate local ISO 8601 timestamp with timezone info
-        # Courtesy of https://stackoverflow.com/questions/2150739/iso-time-iso-8601-in-python
-        #
-        utc_offset_sec = \
-            time.altzone if time.localtime().tm_isdst else time.timezone
-        utc_offset = datetime.timedelta(seconds=-utc_offset_sec)
-        timestamp = datetime.datetime.now().replace(
-            tzinfo=datetime.timezone(offset=utc_offset)).isoformat()
-
+        timestamp = hvacmon.util.get_timestamp()
         stream = io.BytesIO()
         with picamera.array.PiRGBArray(self._camera) as stream:
             self._camera.capture(stream, format='bgr')

@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
 import sys
-
-from hvacmon import main
+import hvacmon.service
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(hvacmon.service.run())
