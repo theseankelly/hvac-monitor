@@ -4,6 +4,7 @@ import argparse
 import dateutil
 import dateutil.parser
 import schedule
+import time
 import cv2
 import numpy as np
 
@@ -76,6 +77,7 @@ def run():
         schedule.every(5).seconds.do(hvac_mgr.run)
         while 1:
             schedule.run_pending()
+            time.sleep(1)
 
 
 if __name__ == '__main__':
