@@ -20,6 +20,8 @@ class HvacMgr():
             self.prev_status_ = hvacmon.imgproc.parse_image(im)
         except:
             self.prev_status_ = np.zeros((4,2))
+        print("(%s) Initial state:" % self.prev_timestamp_)
+        print(self.prev_status_)
 
     def run(self):
         im, timestamp = self.cam_.get_frame()
