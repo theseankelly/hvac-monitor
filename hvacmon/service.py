@@ -2,6 +2,7 @@
 import sys
 import argparse
 import dateutil
+import dateutil.parser
 import schedule
 import cv2
 import numpy as np
@@ -62,7 +63,7 @@ class HvacMgr():
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-r", "--rotation", nargs='?', const=0, type=int,
+    parser.add_argument("-r", "--rotation", nargs='?', default=0, type=int,
         help="Camera rotation in degrees", required=False)
     args = parser.parse_args()
     return args
@@ -72,7 +73,7 @@ def run():
 
     with hvacmon.camera.Camera(rotation=args.rotation) as cam:
         hvac_mgr = HvacMgr(cam)
-        schedule.every(5).seconds.do(hvac_mgr.run())
+        schedule.every(5).seconds.do(hvac_mgr.run)
         while 1:
             schedule.run_pending()
 
