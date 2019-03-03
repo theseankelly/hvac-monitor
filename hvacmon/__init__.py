@@ -18,7 +18,7 @@ def main():
         im, prev_timestamp = cam.get_frame()
 
         try:
-            prev_status = hvacmon.imgproc.parse_image_hardcoded_positions(im)
+            prev_status = hvacmon.imgproc.parse_image(im)
         except:
             prev_status = np.zeros((4,2))
             pass
@@ -41,7 +41,7 @@ def main():
                   dateutil.parser.parse(prev_timestamp)).total_seconds()
 
             try:
-                status = hvacmon.imgproc.parse_image_hardcoded_positions(im)
+                status = hvacmon.imgproc.parse_image(im)
             except:
                 print("(%s) Error processing image!" % timestamp)
                 cv2.imwrite('/home/pi/data/hvac/failures/%s.png' % filename, im)
