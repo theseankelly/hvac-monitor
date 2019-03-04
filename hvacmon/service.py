@@ -11,6 +11,7 @@ import numpy as np
 import hvacmon.camera
 import hvacmon.imgproc
 import hvacmon.db
+import hvacmon.weather
 
 class HvacMgr():
     def __init__(self, cam):
@@ -62,6 +63,11 @@ class HvacMgr():
             self.prev_status_ = status
             self.prev_timestamp_ = timestamp
 
+def temperature():
+    timestamp, temperature = hvacmon.weather.get_temperature()
+    print("(%s) Got temperature reading: %f" % (timestamp, temperature))
+    hvacmon.db.append_temperature_data(timestamp, temperature)
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-r", "--rotation", nargs='?', default=0, type=int,
@@ -75,10 +81,10 @@ def run():
     with hvacmon.camera.Camera(rotation=args.rotation) as cam:
         hvac_mgr = HvacMgr(cam)
         schedule.every(5).seconds.do(hvac_mgr.run)
+        schedule.every(15).minutes.do(temperature)
         while 1:
             schedule.run_pending()
             time.sleep(1)
-
 
 if __name__ == '__main__':
     sys.exit(run())
