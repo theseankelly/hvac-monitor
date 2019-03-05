@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 import sys
 import argparse
+import time
 import dateutil
 import dateutil.parser
 import schedule
-import time
-import cv2
 import numpy as np
+import cv2
 
 import hvacmon.camera
 import hvacmon.imgproc
@@ -21,8 +21,8 @@ class HvacMgr():
             self.prev_status_ = hvacmon.imgproc.parse_image(im)
         except:
             self.prev_status_ = np.zeros((4,2))
-        print("(%s) Initial state:" % self.prev_timestamp_)
-        print(self.prev_status_)
+        print("(%s) Initial state: %s" % (self.prev_timestamp_,
+                                          self.prev_status_.flatten())
 
     def run(self):
         im, timestamp = self.cam_.get_frame()
@@ -47,8 +47,8 @@ class HvacMgr():
             return
 
         if (~(status == self.prev_status_).all()):
-            print("(%s) Status change detected!" % timestamp)
-            print(status)
+            print("(%s) Status change detected: %s" % (timestamp,
+                                                       status.flatten()))
             cv2.imwrite('/home/pi/data/hvac/statechange/%s.png' % filename, im)
 
             hvacmon.db.append_zone_data(

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-import cv2
 import numpy as np
+import cv2
 
 def find_leds(im):
     params = cv2.SimpleBlobDetector_Params()

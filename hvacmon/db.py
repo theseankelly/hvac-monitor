@@ -1,13 +1,13 @@
 import sqlite3
 
-
 def append_zone_data(starttime, endtime, zoneinfo):
-
     with sqlite3.connect('/home/pi/databases/hvacmon.db') as db:
         cursor = db.cursor()
         cursor.execute('''
-            INSERT INTO zone_readings(starttime, endtime, one_call, one_valve, two_call,
-                                      two_valve, three_call, three_valve,
+            INSERT INTO zone_readings(starttime, endtime,
+                                      one_call, one_valve,
+                                      two_call, two_valve,
+                                      three_call, three_valve,
                                       four_call, four_valve)
             VALUES(?,?,?,?,?,?,?,?,?,?)''',
             (starttime, endtime,
@@ -18,7 +18,6 @@ def append_zone_data(starttime, endtime, zoneinfo):
         db.commit()
 
 def append_temperature_data(timestamp, temperature):
-
     with sqlite3.connect('/home/pi/databases/hvacmon.db') as db:
         cursor = db.cursor()
         cursor.execute('''
