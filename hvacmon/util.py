@@ -5,12 +5,12 @@ import datetime
 
 def get_timestamp():
     """
-    Gets an ISO8601 formatted timestamp
+    Gets an ISO8601 formatted timestamp.
 
     Returns
     -------
     string
-        A timestamp formatted for ISO8601 with local zone info
+        A timestamp formatted for ISO8601 with local zone info.
     """
     utc_offset_sec = \
         time.altzone if time.localtime().tm_isdst else time.timezone

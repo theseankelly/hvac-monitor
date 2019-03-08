@@ -1,38 +1,62 @@
 #!/usr/bin/env python
-import cv2
-import datetime
 import io
+import time
 import picamera
 import picamera.array
-import time
-import numpy as np
 import hvacmon.util
 
 class Camera:
-    def __init__(self, resolution=(640, 480), rotation=0):
-        self._resolution = resolution
+    """
+    Helper for configuring and obtaining images off raspberry pi camera.
+
+    Wraps the picamera module with specific settings.
+
+    Methods
+    -------
+    __init__(rotation=0)
+        Initializes the camera object and configures imager settings.
+    get_frame()
+        Reads frame into an openCV compatible buffer.
+    """
+
+    def __init__(self, rotation=0):
+        """
+        Initializes the object and configures the imager
+
+        Parameters
+        ----------
+        rotation : int
+            Camera rotation to apply. Must be one of 0, 90, 180, or 270.
+        """
+        self._resolution = (1280, 720)
+        self._exposure_mode = 'off'
+        self._shutter_speed = 16000
         self._rotation = rotation
-
-    def __enter__(self):
-        self._camera = picamera.PiCamera()
-        self._camera.rotation = self._rotation
-        self._camera.exposure_mode = 'off'
-        self._camera.shutter_speed = 16000
+        with picamera.PiCamera() as camera:
+            camera.resolution = self._resolution
+            camera.rotation = self._rotation
+            camera.exposure_mode = self._exposure_mode
+            camera.shutter_speed = self._shutter_speed
         time.sleep(2)
-        return self
-
-    def __exit__(self, type, value, traceback):
-        self._camera.close()
 
     def get_frame(self):
         """
-        Returns an OpenCV image captured from the camera
+        Reads frame into an openCV compatible buffer.
+
+        Returns
+        -------
+        timestamp : str
+            Approximate timestamp associated with the frame capture.
+
+        image : 3 dimensional ndarray
+            NumPy array containing image data. Rows and Cols match configured
+            imager size. Channels are in 'bgr' order for use with OpenCV.
         """
         timestamp = hvacmon.util.get_timestamp()
         stream = io.BytesIO()
-        with picamera.array.PiRGBArray(self._camera) as stream:
-            self._camera.capture(stream, format='bgr')
-            image = stream.array
+        with picamera.PiCamera() as camera:
+            with picamera.array.PiRGBArray(camera) as stream:
+                camera.capture(stream, format='bgr')
+                image = stream.array
 
-        return image, timestamp
-
+        return timestamp, image

@@ -1,9 +1,23 @@
 #!/usr/bin/env python
-
 import numpy as np
 import cv2
 
 def find_leds(im):
+    """
+    Locates LEDs in a thresholded image.
+
+    Parameters
+    ----------
+    im : numpy.ndarray
+        Thresholded image, where blobs correspond to LEDs.
+
+    Returns
+    -------
+    2xn numpy.ndarray
+        Array of located LED centroids.
+        ([[r1,c1],[r2,c2],...])
+
+    """
     params = cv2.SimpleBlobDetector_Params()
     params.minThreshold = 0
     params.maxThreshold = 400
@@ -26,12 +40,27 @@ def parse_image_hardcoded_positions(im):
     """
     Parses image based on hardcoded position information.
 
-    Temporary workaround so I can still collect data until I sort out
-    exposure/whitebalance issues on the raspicam.
+    Relies on a static camera and is highly sensitive to movements.
 
-    Do not change any offsets/sizes unless the camera moves!
+    This function is preserved for legacy/debug purposes only.
+
+    Parameters
+    ----------
+    im : numpy.ndarray
+        OpenCV image array captured from the camera module.
+
+    Returns
+    -------
+    4x2 numpy.ndarray
+        Array of status indicators where each row is a zone.
+        The first column indicates whether the thermostat is calling.
+        The second column indicates whether the zone valve is open.
+
+    Raises
+    ------
+    RuntimeError
+        If LEDs are unable to be parsed from the source image.
     """
-
     #
     # Crop a fixed ROI and convert to grayscale
     #
@@ -97,15 +126,33 @@ def parse_image_hardcoded_positions(im):
             status[3,1] = 1
     else:
         raise RuntimeError('Unable to parse power/status LED!')
-
     return status
 
 def parse_image(im):
     """
-    Parses an input image for LEDs
-    """
+    Parses HVAC status LEDs from an image.
 
+    Parameters
+    ----------
+    im : numpy.ndarray
+        OpenCV image array (BGR) returned from Camera.get_frame()
+
+    Returns
+    -------
+    4x2 numpy.ndarray
+        Array of status indicators where each row is a zone.
+        The first column indicates whether the thermostat is calling.
+        The second column indicates whether the zone valve is open.
+
+    Raises
+    ------
+    RuntimeError
+        If LEDs are unable to be parsed from the source image.
+    """
+    #
     # Crop a fairly liberal ROI
+    # TODO: Can this be eliminated?
+    #
     im = im[170:330,630:755]
 
     #
