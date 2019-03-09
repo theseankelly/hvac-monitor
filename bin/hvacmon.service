@@ -1,0 +1,17 @@
+[Unit]
+Description=HVAC Monitor Service
+After=multi-user.target
+
+[Service]
+Type=simple
+Environment="DARKSKY_API_KEY="
+Environment="HVACMON_LAT=00.00000"
+Environment="HVACMON_LON=00.00000"
+ExecStart=python -u -m hvacmon -o /var/lib/hvacmon
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=inherit
+
+[Install]
+WantedBy=multi-user.target

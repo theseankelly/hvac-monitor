@@ -4,11 +4,17 @@ from distutils.core import setup
 
 setup(
     name='hvacmon',
-    packages=[],
+    description='Monitors HVAC status on Raspberry Pi',
     version='0.1.0',
-    description='Monitors HVAC performance on Raspberry Pi',
+    packages=['hvacmon'],
+    entry_points={
+        'console_scripts': [
+            'hvacmon = hvacmon.service:main'
+        ]
+    },
     author='Sean Kelly',
     license='TBD',
     author_email='theseankelly@outlook.com',
     url='https://github.com/theseankelly/hvacmon'
 )
+

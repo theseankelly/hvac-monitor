@@ -1,52 +1,72 @@
 #!/usr/bin/env python
-import cv2
-import datetime
 import io
+import time
 import picamera
 import picamera.array
-import time
-import numpy as np
+import hvacmon.util
 
 class Camera:
-    def __init__(self, resolution=(640, 480), rotation=0, framerate=30,
-                 exposure_mode='sports'):
-        self._resolution = resolution
+    """
+    Helper for configuring and obtaining images off raspberry pi camera.
+
+    Wraps the picamera module with specific settings.
+
+    Methods
+    -------
+    __init__(rotation=0)
+        Initializes the camera object and configures imager settings.
+    get_frame()
+        Reads frame into an openCV compatible buffer.
+    """
+
+    def __init__(self, rotation=0):
+        """
+        Initializes the object and configures the imager
+
+        Parameters
+        ----------
+        rotation : int
+            Camera rotation to apply. Must be one of 0, 90, 180, or 270.
+        """
+        self._resolution = (1280, 720)
+        self._exposure_mode = 'off'
+        self._shutter_speed = 16000
         self._rotation = rotation
-        self._framerate = framerate
-        self._exposure_mode = exposure_mode
 
-    def __enter__(self):
-        self._camera = picamera.PiCamera()
-        self._camera.rotation = self._rotation
-        #self._camera.framerate = self._framerate
-        #self._camera.exposure_mode = self._exposure_mode
-        self._camera.exposure_mode = 'off'
-        self._camera.shutter_speed = 16000
-        # Let automatic controls settle
+    def set_settings(self, camera):
+        """
+        Sets the imager settings and waits for them to take effect
+
+        Parameters
+        ----------
+        camera : picamera.PiCamera
+            Open handle to the camera
+        """
+        camera.resolution = self._resolution
+        camera.rotation = self._rotation
+        camera.exposure_mode = self._exposure_mode
+        camera.shutter_speed = self._shutter_speed
         time.sleep(2)
-        return self
-
-    def __exit__(self, type, value, traceback):
-        self._camera.close()
 
     def get_frame(self):
         """
-        Returns an OpenCV image captured from the camera
+        Reads frame into an openCV compatible buffer.
+
+        Returns
+        -------
+        timestamp : str
+            Approximate timestamp associated with the frame capture.
+
+        image : 3 dimensional ndarray
+            NumPy array containing image data. Rows and Cols match configured
+            imager size. Channels are in 'bgr' order for use with OpenCV.
         """
-        #
-        # Generate local ISO 8601 timestamp with timezone info
-        # Courtesy of https://stackoverflow.com/questions/2150739/iso-time-iso-8601-in-python
-        #
-        utc_offset_sec = \
-            time.altzone if time.localtime().tm_isdst else time.timezone
-        utc_offset = datetime.timedelta(seconds=-utc_offset_sec)
-        timestamp = datetime.datetime.now().replace(
-            tzinfo=datetime.timezone(offset=utc_offset)).isoformat()
-
+        timestamp = hvacmon.util.get_timestamp()
         stream = io.BytesIO()
-        with picamera.array.PiRGBArray(self._camera) as stream:
-            self._camera.capture(stream, format='bgr')
-            image = stream.array
+        with picamera.PiCamera() as camera:
+            self.set_settings(camera)
+            with picamera.array.PiRGBArray(camera) as stream:
+                camera.capture(stream, format='bgr')
+                image = stream.array
 
-        return image, timestamp
-
+        return timestamp, image
