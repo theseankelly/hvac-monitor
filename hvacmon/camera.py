@@ -32,11 +32,20 @@ class Camera:
         self._exposure_mode = 'off'
         self._shutter_speed = 16000
         self._rotation = rotation
-        with picamera.PiCamera() as camera:
-            camera.resolution = self._resolution
-            camera.rotation = self._rotation
-            camera.exposure_mode = self._exposure_mode
-            camera.shutter_speed = self._shutter_speed
+
+    def set_settings(self, camera):
+        """
+        Sets the imager settings and waits for them to take effect
+
+        Parameters
+        ----------
+        camera : picamera.PiCamera
+            Open handle to the camera
+        """
+        camera.resolution = self._resolution
+        camera.rotation = self._rotation
+        camera.exposure_mode = self._exposure_mode
+        camera.shutter_speed = self._shutter_speed
         time.sleep(2)
 
     def get_frame(self):
@@ -55,6 +64,7 @@ class Camera:
         timestamp = hvacmon.util.get_timestamp()
         stream = io.BytesIO()
         with picamera.PiCamera() as camera:
+            self.set_settings(camera)
             with picamera.array.PiRGBArray(camera) as stream:
                 camera.capture(stream, format='bgr')
                 image = stream.array
