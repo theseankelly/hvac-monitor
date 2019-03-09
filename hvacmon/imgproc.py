@@ -183,14 +183,14 @@ def parse_image(im):
     # Sanity test - see if a 3x3 patch of pixels around the 'power led'
     # does in fact fall within the green color space.
     #
-    lower_green = np.array([20,0,10])
-    upper_green = np.array([110,255,255])
-    mask_green = cv2.inRange(im_hsv, lower_green, upper_green)
-    patch = mask_green[
-        int(power_led[0])-2:int(power_led[0])+3,
-        int(power_led[1])-2:int(power_led[1])+3]
-    if (len(patch[patch > 0].flatten()) < 1):
-        raise RuntimeError('Power LED failed color check.')
+    #lower_green = np.array([20,0,10])
+    #upper_green = np.array([110,255,255])
+    #mask_green = cv2.inRange(im_hsv, lower_green, upper_green)
+    #patch = mask_green[
+    #    int(power_led[0])-2:int(power_led[0])+3,
+    #    int(power_led[1])-2:int(power_led[1])+3]
+    #if (len(patch[patch > 0].flatten()) < 1):
+    #    raise RuntimeError('Power LED failed color check.')
 
     #
     # Synthesize the ideal LED offsets from the power LED
