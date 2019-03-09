@@ -39,7 +39,7 @@ class Database:
                     two_call INTEGER, two_valve INTEGER,
                     three_call INTEGER, three_valve INTEGER,
                     four_call INTEGER, four_valve INTEGER)''')
-            cursor.exsecute('''
+            cursor.execute('''
                 CREATE TABLE IF NOT EXISTS "temperature_readings"(
                     timestamp TEXT, temperature REAL)''')
             db.commit()

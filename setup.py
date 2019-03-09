@@ -9,7 +9,7 @@ setup(
     packages=['hvacmon'],
     entry_points={
         'console_scripts': [
-            'hvacmon = hvacmon.__main__:main'
+            'hvacmon = hvacmon.service:main'
         ]
     },
     author='Sean Kelly',
@@ -17,3 +17,4 @@ setup(
     author_email='theseankelly@outlook.com',
     url='https://github.com/theseankelly/hvacmon'
 )
+

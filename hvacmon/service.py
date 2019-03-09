@@ -58,7 +58,9 @@ class Service:
             to output for future analysis/debug. This can consume large amounts
             of disk over time.
         """
-        self._outdir = os.path.basename(outdir)
+        self._debug = debug
+        self._outdir = os.path.join(outdir)
+
         if not os.path.exists(self._outdir):
             print("Creating outdir: %s" % self._outdir)
             os.makedirs(self._outdir)
@@ -79,7 +81,6 @@ class Service:
         self._camera = hvacmon.camera.Camera(camera_rotation)
         self._db = hvacmon.db.Database(filepath=self._outdir)
         self._weather = hvacmon.weather.Weather(darksky_api_key, lat, lon)
-        self._debug = debug
 
         self._prev_timestamp = hvacmon.util.get_timestamp()
         self._prev_status = np.zeros((4,2))
@@ -100,6 +101,8 @@ class Service:
 
         print("(%s) Initial state: %s" % (self._prev_timestamp,
                                           self._prev_status.flatten()))
+
+        self.sample_temperature()
 
         schedule.every(5).seconds.do(self.sample_hvac_status)
         schedule.every(15).minutes.do(self.sample_temperature)
@@ -148,9 +151,9 @@ class Service:
                     os.path.join(self._changepath, '%s.png' % filename), im)
 
             self._db.append_zone_data(
-                self.prev_timestamp_, timestamp, self.prev_status_)
-            self.prev_status_ = status
-            self.prev_timestamp_ = timestamp
+                self._prev_timestamp, timestamp, self._prev_status)
+            self._prev_status = status
+            self._prev_timestamp = timestamp
 
         elif (dt > 60):
             print("(%s) No status change after 1 min, logging..." % timestamp)
@@ -159,10 +162,9 @@ class Service:
                     os.path.join(self._timeoutpath, '%s.png' % filename), im)
 
             self._db.append_zone_data(
-                self.prev_timestamp_, timestamp, self.prev_status_)
-            self.prev_status_ = status
-            self.prev_timestamp_ = timestamp
-
+                self._prev_timestamp, timestamp, self._prev_status)
+            self._prev_status = status
+            self._prev_timestamp = timestamp
 
     def sample_temperature(self):
         """
