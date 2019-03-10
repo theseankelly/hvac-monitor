@@ -181,15 +181,15 @@ def parse_image(im):
 
     #
     # Sanity test - see if a 3x3 patch of pixels around the 'power led'
-    # does in fact fall within the green color space.
+    # does in fact fall within the green color space. Using the 'green' channel
+    # only because when there are no other LEDs on, the imager tends to
+    # saturate all LEDs. This case should not fail.
     #
-    lower_green = np.array([20,0,10])
-    upper_green = np.array([110,255,255])
-    mask_green = cv2.inRange(im_hsv, lower_green, upper_green)
+    mask_green = (im[:,:,1] > 75)
     patch = mask_green[
         int(power_led[0])-2:int(power_led[0])+3,
         int(power_led[1])-2:int(power_led[1])+3]
-    if (len(patch[patch > 0].flatten()) < 1):
+    if (len(patch[patch > 0].flatten()) < 5):
         raise RuntimeError('Power LED failed color check.')
 
     #
