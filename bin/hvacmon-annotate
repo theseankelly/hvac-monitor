@@ -39,7 +39,7 @@ def main():
     for f in all_files:
         im = cv2.imread(f)
 
-        status = imgproc.parse_image2(im)
+        status = imgproc.parse_image(im)
 
         # Create an overaly for visualization
         textLocation = (600, 250)
@@ -65,7 +65,6 @@ def main():
             save_data(args.output, f, ERROR_ROOT_GROUP, im, status)
         else:
             save_data(args.output, f, ANNOTATED_ROOT_GROUP, im, status)
-            # TODO - save the data/annotations to H5
 
         if (args.delete):
             os.remove(f)
