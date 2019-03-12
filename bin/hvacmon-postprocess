@@ -1,0 +1,107 @@
+#!/usr/bin/env python
+"""
+Helper script for reprocessing a batch of image files.
+"""
+
+import sys
+import argparse
+import os
+from glob import glob
+import dateutil
+import dateutil.parser
+import datetime
+import cv2
+
+import hvacmon.imgproc
+import hvacmon.db
+import hvacmon.util
+
+def parse_timestamps(f):
+    """
+    Parses timestamp information from filename.
+
+    Given a filename in the format %Y-%m-%dT%H-%M-%S.ext, returns
+    the two datetime objects corresponding to the sample timestamps.
+
+    Parameters
+    ----------
+    f : str
+        Filename to parse.
+
+    Returns
+    -------
+    2-tuple of ISO8061 strings corresponding to the timestamps in the filename
+    """
+    timestamp_strs = os.path.splitext(os.path.basename(f))[0].split('_')
+    t1 = datetime.datetime.strptime(timestamp_strs[0], "%Y-%m-%dT%H-%M-%S")
+    t2 = datetime.datetime.strptime(timestamp_strs[1], "%Y-%m-%dT%H-%M-%S")
+    return (hvacmon.util.get_timestamp(t1), hvacmon.util.get_timestamp(t2))
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--input", type=str, nargs='+',
+        help="Directory containing debug images to process", required=True)
+    parser.add_argument("-o", "--outdir", type=str, default='/var/lib/hvacmon',
+        help="Output directory to store database and debug images")
+    args = parser.parse_args()
+    return args
+
+def main():
+    args = parse_args()
+
+    # Glob to workaround wildcards on Windows
+    all_files = [f for files in args.input for f in glob(files)]
+
+    # Get initial state
+    im = cv2.imread(all_files[0])
+    prev_timestamp = parse_timestamps(all_files[0])[0]
+    prev_t2 = prev_timestamp
+    try:
+        prev_status = hvacmon.imgproc.parse_image(im)
+    except RuntimeError as e:
+        print("Error processing initial state: %s" % e)
+        return
+
+    database = hvacmon.db.Database(filepath='.')
+
+    for f in all_files:
+        # Always use the second time in the filename
+        t1, timestamp = parse_timestamps(f)
+        im = cv2.imread(f)
+
+        dt = (dateutil.parser.parse(timestamp) -
+              dateutil.parser.parse(prev_timestamp)).total_seconds()
+
+        try:
+            status = hvacmon.imgproc.parse_image(im)
+        except RuntimeError as e:
+            print("(%s) Error processing image: %s" % (timestamp, e))
+            return
+
+        #
+        # Need to watch out for breaks in the sequence
+        #
+        if (prev_t2 != t1):
+            print("Gap in images detected: %s -- %s" % (prev_t2, t1))
+            # TODO: Handle this case. For now, throw to raise the alarm.
+            raise RuntimeError('Gap in images detected')
+
+        if (~(status == prev_status).all()):
+            print("(%s) Status change detected: %s" % (timestamp,
+                                                       status.flatten()))
+            database.append_zone_data(
+                prev_timestamp, timestamp, prev_status)
+            prev_status = status
+            prev_timestamp = timestamp
+
+        elif (dt > 60):
+            print("(%s) No status change after 1 min, logging..." % timestamp)
+            database.append_zone_data(
+                prev_timestamp, timestamp, prev_status)
+            prev_status = status
+            prev_timestamp = timestamp
+
+        prev_t2 = timestamp
+
+if __name__ == '__main__':
+    sys.exit(main())
