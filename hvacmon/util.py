@@ -1,20 +1,25 @@
 #!/usr/bin/env python
 
-import time
-import datetime
+from datetime import datetime
 
-def get_timestamp():
+def get_timestamp(t = None):
     """
-    Gets an ISO8601 formatted timestamp.
+    Gets an ISO8601 formatted timestamp (UTC).
+
+    Parameters
+    ----------
+    t : datetime.datetime, optional
+        UTC timestamp to format. If not specified, current time is obtained.
 
     Returns
     -------
     string
-        A timestamp formatted for ISO8601 with local zone info.
+        A timestamp formatted for ISO8601 in UTC.
     """
-    utc_offset_sec = \
-        time.altzone if time.localtime().tm_isdst else time.timezone
-    utc_offset = datetime.timedelta(seconds=-utc_offset_sec)
-    timestamp = datetime.datetime.now().replace(
-        tzinfo=datetime.timezone(offset=utc_offset)).isoformat()
+    if t is None:
+        t = datetime.utcnow()
+
+    timestamp = t.replace(
+        tzinfo=None).isoformat(
+            "T", "microseconds")
     return timestamp
