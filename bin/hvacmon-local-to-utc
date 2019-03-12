@@ -1,0 +1,69 @@
+#!/usr/bin/env python
+"""
+Helper script to convert local timezones in a database to UTC
+"""
+
+import sys
+import sqlite3
+import argparse
+
+import numpy as np
+
+from datetime import datetime
+import dateutil
+import dateutil.parser
+
+import hvacmon.util
+import hvacmon.db
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--input", type=str,
+        help="Input database to process", required=True)
+    parser.add_argument("-o", "--output", type=str,
+        help="Output database to write to (overwrites if exists)",
+        required=True)
+    args = parser.parse_args()
+    return args
+
+def main():
+    args = parse_args()
+
+    with sqlite3.connect(args.output) as db:
+        cursor = db.cursor()
+        cursor.execute('''DROP TABLE IF EXISTS zone_readings''')
+        cursor.execute('''DROP TABLE IF EXISTS temperature_readings''')
+        db.commit()
+
+    out_db = hvacmon.db.Database('.', args.output)
+
+    with sqlite3.connect(args.input) as input_db:
+        in_cursor = input_db.cursor()
+        in_cursor.execute('''SELECT * FROM zone_readings''')
+        zone_rows = in_cursor.fetchall()
+
+        in_cursor.execute('''SELECT * FROM temperature_readings''')
+        temperature_rows = in_cursor.fetchall()
+
+    for r in zone_rows:
+        # convert each row, insert into other db
+        t_start = dateutil.parser.parse(r[0])
+        t_start = t_start - t_start.utcoffset()
+
+        t_end = dateutil.parser.parse(r[1])
+        t_end = t_end - t_end.utcoffset()
+
+        out_db.append_zone_data(
+            hvacmon.util.get_timestamp(t_start),
+            hvacmon.util.get_timestamp(t_end),
+            np.array(r[2::]).reshape(4,2))
+
+    for r in temperature_rows:
+        t = dateutil.parser.parse(r[0])
+        t = t - t.utcoffset()
+        out_db.append_temperature_data(
+            hvacmon.util.get_timestamp(t),
+            r[1])
+
+if __name__ == '__main__':
+    sys.exit(main())
