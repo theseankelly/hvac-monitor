@@ -20,6 +20,6 @@ def get_timestamp(t = None):
         t = datetime.utcnow()
 
     timestamp = t.replace(
-        tzinfo=None).isoformat(
-            "T", "microseconds")
+        tzinfo=None).isoformat()
+    
     return timestamp
